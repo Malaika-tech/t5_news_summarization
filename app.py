@@ -1,5 +1,5 @@
 # ==============================================
-# Streamlit App for T5 Text Summarization
+# Streamlit App for T5 News Summarization
 # ==============================================
 import streamlit as st
 from transformers import T5Tokenizer, T5ForConditionalGeneration
@@ -9,9 +9,8 @@ import torch
 # ==============================================
 # CONFIGURATION
 # ==============================================
-MODEL_PATH = "./best_model"
+MODEL_NAME = "MalaikaNaveed1/t5_news_summarization"  # Your Hugging Face model repo
 MAX_INPUT_LEN = 512
-MAX_SUMMARY_LEN = 128
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ==============================================
@@ -19,19 +18,19 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # ==============================================
 @st.cache_resource
 def load_model():
-    st.write("🔄 Loading fine-tuned T5 model...")
-    tokenizer = T5Tokenizer.from_pretrained(MODEL_PATH, legacy=False)
-    model = T5ForConditionalGeneration.from_pretrained(MODEL_PATH)
+    st.write("🔄 Loading fine-tuned T5 model from Hugging Face Hub...")
+    tokenizer = T5Tokenizer.from_pretrained(MODEL_NAME)
+    model = T5ForConditionalGeneration.from_pretrained(MODEL_NAME)
     model.to(DEVICE)
     return model, tokenizer
 
 model, tokenizer = load_model()
-st.success("✅ Model loaded successfully!")
+st.success("✅ Model loaded successfully from Hugging Face!")
 
 # ==============================================
 # APP TITLE & DESCRIPTION
 # ==============================================
-st.title("📰 T5 Text Summarization App")
+st.title("📰 T5 News Summarization App")
 st.markdown("""
 This app uses a fine-tuned **T5 model** to summarize long news articles from the **CNN/DailyMail** dataset.
 
@@ -48,7 +47,7 @@ st.sidebar.header("⚙️ Generation Settings")
 max_length = st.sidebar.slider("Maximum Summary Length", 50, 300, 128)
 num_beams = st.sidebar.slider("Beam Search Width", 2, 10, 4)
 length_penalty = st.sidebar.slider("Length Penalty", 0.5, 3.0, 2.0, 0.1)
-do_sample = st.sidebar.checkbox("Enable Sampling (for more creative summaries)", value=False)
+do_sample = st.sidebar.checkbox("Enable Sampling (for creative summaries)", value=False)
 temperature = st.sidebar.slider("Sampling Temperature", 0.7, 1.5, 1.0, 0.1)
 
 # ==============================================
@@ -64,7 +63,7 @@ article_text = st.text_area(
 # SUMMARIZATION FUNCTION
 # ==============================================
 def generate_summary(article):
-    """Generate summary using fine-tuned T5"""
+    """Generate summary using the fine-tuned T5 model."""
     input_text = "summarize: " + article.strip()
     inputs = tokenizer(
         input_text,
@@ -84,14 +83,13 @@ def generate_summary(article):
             early_stopping=True
         )
 
-    summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-    return summary
+    return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
 # ==============================================
 # ROUGE SCORE CALCULATION
 # ==============================================
 def compute_rouge(reference, generated):
-    """Compute ROUGE scores for comparison"""
+    """Compute ROUGE scores for evaluation."""
     scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
     scores = scorer.score(reference, generated)
     return {
@@ -132,5 +130,6 @@ st.markdown("""
 **Developed for Task 2 — Encoder-Decoder Model (T5) Fine-tuning Project**  
 📚 Dataset: CNN/DailyMail  
 🧠 Model: [T5-small / T5-base](https://huggingface.co/t5-base)  
+🤗 Hosted on [Hugging Face Hub](https://huggingface.co/MalaikaNaveed1/t5_news_summarization)  
 🧑‍💻 Built with Streamlit & Hugging Face Transformers
 """)
